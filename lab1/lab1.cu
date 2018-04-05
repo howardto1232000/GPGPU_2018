@@ -168,14 +168,14 @@ void Lab1VideoGenerator::Generate(uint8_t *yuv) {
 
 	} else {
 		if (tick == false) {
-			(impl->t) -= 50;
-			(impl->u) -= 10;
-			(impl->v) -= 10;
+			(impl->t) -= 20;
+			//(impl->u) -= 10;
+			//(impl->v) -= 10;
 			tick = true;
 		}
-		(impl->coordx) = (impl->coordx) + ((W/2-(impl->coordx))/40);
-		(impl->coordy) = (impl->coordy) + ((H/2-(impl->coordy))/40);
-		if (current_frame > 1600-40) {
+		(impl->coordx) = (impl->coordx) + ((W/2-(impl->coordx))/30);
+		(impl->coordy) = (impl->coordy) + ((H/2-(impl->coordy))/30);
+		/*if (current_frame > 1600-40) {
 			(impl->r) += 4;
 		} else if (current_frame > 1600-80){
 			(impl->r) += 3;
@@ -183,11 +183,14 @@ void Lab1VideoGenerator::Generate(uint8_t *yuv) {
 			(impl->r) += 2;
 		} else {
 			(impl->r) += 1;
-		}
+		}*/
+		(impl->r) += 1;
 		int tmp = (impl->t);
-		for (int i = 0; i < (impl->r); i += 2) {
-			int color = (tmp + i) < 255 ? (tmp + i) : 255;
-			draw<<<(W*H+31)/32, 32>>>(yuv, 0, (impl->coordx), (impl->coordy), ((impl->r)-i), color);
+		int radius = (impl->r);
+		for (int i = 0; i < (impl->r); i += 1) {
+			int color = (tmp + i) < 255 ? (tmp + i) : (tmp + i);
+			int rd = (radius-i) > 0 ? (radius-i) : 0;
+			draw<<<(W*H+31)/32, 32>>>(yuv, 0, (impl->coordx), (impl->coordy), rd, color);
 		}
 	}
 	
@@ -204,7 +207,6 @@ void draw(uint8_t *yuv, int seed, int x, int y, int r, int yy) {
 	const int tidx = tid % W;
 	const int tidy = tid / W;
 	//curand_init(seed, 0, 0, &state);
-	//yuv[tid] = (uint8_t) curand(&state) % 255;
 	if ((tidx-x)*(tidx-x) + (tidy-y)*(tidy-y) <= r*r) {
 		yuv[tidy*W + tidx] = (uint8_t)yy;
 	} else if (seed == 0) {
