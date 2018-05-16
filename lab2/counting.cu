@@ -32,24 +32,43 @@ void CountPosition1(const char *text, int *pos, int text_size)
                                 dev_pos);
 }
 
+__global__ void transform(const char *text, int *pos, int text_size) {
+    int tid = blockIdx.x * blockDim.x + threadIdx.x;
+    if (tid < text_size) {
+        pos[tid] = int (text[tid] != '\n');
+    }
+}
+
 __global__
-void kernel(const char *text, int *pos, int text_size) 
-{
-    int i;
-    for (i = 0; i < text_size; i++) {
-        if (text[i] != '\n') {
-            if (i == 0) {
-                pos[i] = 1;
-            } else {
-                pos[i] = pos[i-1] + 1;
+void kernel(const char *text, int *pos, int text_size) {
+    int tid = blockIdx.x * blockDim.x + threadIdx.x;
+    if (tid == 0) {
+        if (pos[tid] == 1) {
+            int tmp = 1;
+            while (pos[tid + tmp] != 0) {
+                pos[tid + tmp] = pos[tid + tmp - 1] + 1;
+                tmp++;
             }
-        } else {
-            pos[i] = 0;
+        }
+    } else {
+        if (tid < text_size) {
+            if (pos[tid] == 1) {
+                if (pos[tid - 1] == 0) {
+                    int tmp = 1;
+                    while (pos[tid + tmp] != 0) {
+                        pos[tid + tmp] = pos[tid + tmp - 1] + 1;
+                        tmp++;
+                    }
+                }
+            }
         }
     }
 }
 
 void CountPosition2(const char *text, int *pos, int text_size)
 {
-    kernel<<<1, 1>>>(text, pos, text_size);
+    int num_block = CeilDiv(text_size, 32);
+    transform<<< num_block, 32 >>>(text, pos, text_size);
+    kernel<<< num_block, 32 >>>(text, pos, text_size);
+
 }
